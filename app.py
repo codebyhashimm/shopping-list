@@ -1,12 +1,34 @@
 import streamlit as st
+import json
+import os
 
-# Session state
+FILE_NAME = "shopping_list.json"
+
+# ---------- LOAD DATA ----------
+def load_data():
+    if os.path.exists(FILE_NAME):
+        with open(FILE_NAME, "r") as f:
+            return json.load(f)
+    return {"shopping_list": [], "checked_items": []}
+
+# ---------- SAVE DATA ----------
+def save_data():
+    with open(FILE_NAME, "w") as f:
+        json.dump({
+            "shopping_list": st.session_state.shopping_list,
+            "checked_items": list(st.session_state.checked_items)
+        }, f)
+
+# ---------- INIT SESSION ----------
+data = load_data()
+
 if "shopping_list" not in st.session_state:
-    st.session_state.shopping_list = []
+    st.session_state.shopping_list = data["shopping_list"]
 
 if "checked_items" not in st.session_state:
-    st.session_state.checked_items = set()
+    st.session_state.checked_items = set(data["checked_items"])
 
+# ---------- UI ----------
 st.title("🛒 Shopping List Manager")
 
 menu = st.radio("Choose an option:", ["Add item", "Delete item", "Show list"])
@@ -24,7 +46,8 @@ if menu == "Add item":
                 st.warning("Item already in list")
             else:
                 st.session_state.shopping_list.append(user_item)
-                st.success("item added")  # green message
+                save_data()
+                st.success("item added")
 
 # DELETE ITEM
 elif menu == "Delete item":
@@ -36,7 +59,8 @@ elif menu == "Delete item":
             if user_item in st.session_state.shopping_list:
                 st.session_state.shopping_list.remove(user_item)
                 st.session_state.checked_items.discard(user_item)
-                st.error("item removed")  # red message
+                save_data()
+                st.error("item removed")
             else:
                 st.warning("Item not found")
 
@@ -56,3 +80,6 @@ elif menu == "Show list":
                 st.session_state.checked_items.add(item)
             else:
                 st.session_state.checked_items.discard(item)
+
+        # Save checkbox changes
+        save_data()
